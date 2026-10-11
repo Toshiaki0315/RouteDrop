@@ -1,8 +1,8 @@
 use super::grid::{Cell, Grid};
-use super::robot::Robot;
+use super::train::Train;
 use super::types::{Direction, Pos};
 
-/// ステージ定義。固定の壁・ロボット開始位置・ゴールを持つ。
+/// ステージ定義。固定の壁と列車の開始位置を持つ。駅は実行中に出現する。
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Level {
     pub width: usize,
@@ -10,21 +10,21 @@ pub struct Level {
     pub walls: Vec<Pos>,
     pub start: Pos,
     pub start_heading: Direction,
-    pub goal: Pos,
 }
 
 impl Level {
-    /// 壁を配置した盤面を作る。スタートとゴールは盤面の外にある。
+    /// 壁と始発駅を配置した盤面を作る。
     pub fn build_grid(&self) -> Grid {
         let mut grid = Grid::new(self.width, self.height);
         for &wall in &self.walls {
             grid.set(wall, Cell::Wall);
         }
+        grid.set(self.start, Cell::Origin);
         grid
     }
 
-    pub fn spawn_robot(&self) -> Robot {
-        Robot::new(self.start, self.start_heading)
+    pub fn spawn_train(&self) -> Train {
+        Train::new(self.start, self.start_heading)
     }
 
     /// 落下ブロックの出現位置 (最上段の `x` 列)。
@@ -32,15 +32,14 @@ impl Level {
         Pos::new(x, 0)
     }
 
-    /// 盤面の下 (中央) の駅を出発し、盤面の上 (中央) のゴール駅を目指す最初のステージ。
+    /// 盤面の最下段中央の始発駅から出発する最初のステージ。
     pub fn first_stage() -> Self {
         Level {
             width: 7,
             height: 12,
             walls: Vec::new(),
-            start: Pos::new(3, 12),
+            start: Pos::new(3, 11),
             start_heading: Direction::North,
-            goal: Pos::new(3, -1),
         }
     }
 }
@@ -51,22 +50,20 @@ mod tests {
     use crate::core::grid::Cell;
 
     #[test]
-    fn stations_are_outside_the_field_at_center() {
+    fn origin_station_is_on_the_field_at_bottom_center() {
         let level = Level::first_stage();
-        let center = (level.width / 2) as i32;
-        assert_eq!(level.start, Pos::new(center, level.height as i32));
-        assert_eq!(level.goal, Pos::new(center, -1));
-        let grid = level.build_grid();
-        assert_eq!(grid.get(level.start), None);
-        assert_eq!(grid.get(level.goal), None);
+        assert_eq!(level.start, Pos::new(3, 11));
+        assert_eq!(level.start.x, (level.width / 2) as i32);
+        assert_eq!(level.start.y, level.height as i32 - 1);
+        assert_eq!(level.build_grid().get(level.start), Some(Cell::Origin));
     }
 
     #[test]
-    fn build_grid_is_empty_without_walls() {
+    fn build_grid_has_no_walls_by_default() {
         let grid = Level::first_stage().build_grid();
         assert_eq!(grid.width(), 7);
         assert_eq!(grid.height(), 12);
-        assert_eq!(grid.get(Pos::new(3, 11)), Some(Cell::Empty));
+        assert_eq!(grid.get(Pos::new(3, 10)), Some(Cell::Empty));
     }
 
     #[test]
@@ -79,10 +76,10 @@ mod tests {
     }
 
     #[test]
-    fn spawn_robot_uses_start_and_heading() {
-        let robot = Level::first_stage().spawn_robot();
-        assert_eq!(robot.pos, Pos::new(3, 12));
-        assert_eq!(robot.heading, Direction::North);
+    fn spawn_train_uses_start_and_heading() {
+        let train = Level::first_stage().spawn_train();
+        assert_eq!(train.pos, Pos::new(3, 11));
+        assert_eq!(train.heading, Direction::North);
     }
 
     #[test]

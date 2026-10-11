@@ -1,25 +1,16 @@
-import type { Status } from '../types'
-
-const MESSAGES: Record<Status, string | null> = {
-  playing: null,
-  cleared: 'CLEAR!',
-  game_over: 'GAME OVER',
-}
-
 interface Props {
   score: number
-  status: Status
-  onRestart: () => void
+  stationsReached: number
+  rowsToStation: number
 }
 
-export function Hud({ score, status, onRestart }: Props) {
-  const message = MESSAGES[status]
+const pad = (value: number, width: number) => String(Math.max(0, value)).padStart(width, '0')
+
+/** 画面上部の 1 行表示: スコア / 到着駅 / 次の駅まで。 */
+export function Hud({ score, stationsReached, rowsToStation }: Props) {
   return (
     <div className="hud">
-      <div>Score: {score}</div>
-      {message && <div role="status">{message}</div>}
-      <button onClick={onRestart}>Restart</button>
-      <p className="help">← → 移動 / Space 回転 / ↓ ソフトドロップ / ↑ ハードドロップ</p>
+      Score: {pad(score, 6)} / 到着駅: {pad(stationsReached, 3)} / 次の駅まで: {pad(rowsToStation, 3)}
     </div>
   )
 }

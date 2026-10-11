@@ -7,6 +7,10 @@ use super::types::{Panel, Pos};
 pub enum Cell {
     Empty,
     Wall,
+    /// 駅。落下ブロックは入れず、列車は通り抜けられる。
+    Station,
+    /// 始発駅。駅と同じ扱いで、列車が最初にいる。
+    Origin,
     Panel(Panel),
 }
 
@@ -61,12 +65,17 @@ impl Grid {
         }
     }
 
-    /// 行がすべてパネルで埋まっているか (壁・空きを含む行は false)。
+    /// 行がすべてパネルか駅 (始発駅を含む) で埋まっているか (壁・空きを含む行は false)。
     pub fn is_row_full(&self, y: usize) -> bool {
-        (0..self.width).all(|x| matches!(self.cells[y * self.width + x], Cell::Panel(_)))
+        (0..self.width).all(|x| {
+            matches!(
+                self.cells[y * self.width + x],
+                Cell::Panel(_) | Cell::Station | Cell::Origin
+            )
+        })
     }
 
-    /// 行 `y` を消し、それより上のパネルを 1 段下げる。壁は動かない。
+    /// 行 `y` を消し、それより上のパネルと駅を 1 段下げる。壁は動かない。
     pub fn remove_row(&mut self, y: usize) {
         for row in (0..=y).rev() {
             for x in 0..self.width {
@@ -78,7 +87,7 @@ impl Grid {
                     Cell::Empty
                 } else {
                     match self.cells[i - self.width] {
-                        Cell::Panel(panel) => Cell::Panel(panel),
+                        shifted @ (Cell::Panel(_) | Cell::Station | Cell::Origin) => shifted,
                         _ => Cell::Empty,
                     }
                 };
@@ -136,8 +145,10 @@ mod tests {
             Pos::new(1, 0),
             Cell::Panel(Panel::new(PanelKind::Straight, Direction::North)),
         );
+        g.set(Pos::new(2, 0), Cell::Station);
         assert!(!g.is_free(Pos::new(0, 0)));
         assert!(!g.is_free(Pos::new(1, 0)));
+        assert!(!g.is_free(Pos::new(2, 0)));
         assert!(g.is_free(Pos::new(0, 1)));
         assert!(!g.is_free(Pos::new(-1, 0)));
     }
@@ -147,37 +158,42 @@ mod tests {
     }
 
     #[test]
-    fn is_row_full_requires_every_cell_to_be_a_panel() {
+    fn is_row_full_counts_panels_and_stations_but_not_walls_or_gaps() {
         let mut g = Grid::new(3, 2);
         assert!(!g.is_row_full(0));
-        for x in 0..3 {
-            g.set(Pos::new(x, 0), panel(PanelKind::Straight));
-        }
+        g.set(Pos::new(0, 0), panel(PanelKind::Straight));
+        g.set(Pos::new(1, 0), Cell::Station);
+        g.set(Pos::new(2, 0), panel(PanelKind::TurnLeft));
         assert!(g.is_row_full(0));
+        g.set(Pos::new(0, 0), Cell::Origin);
+        assert!(g.is_row_full(0));
+        g.set(Pos::new(0, 0), panel(PanelKind::Straight));
         assert!(!g.is_row_full(1));
         g.set(Pos::new(1, 0), Cell::Wall);
         assert!(!g.is_row_full(0));
     }
 
     #[test]
-    fn remove_row_shifts_panels_down_and_keeps_fixed_cells() {
+    fn remove_row_shifts_panels_and_stations_down_but_not_walls() {
         let mut g = Grid::new(3, 3);
         for x in 0..3 {
             g.set(Pos::new(x, 2), panel(PanelKind::Straight));
         }
         g.set(Pos::new(0, 1), panel(PanelKind::TurnLeft));
         g.set(Pos::new(1, 1), Cell::Wall);
+        g.set(Pos::new(2, 1), Cell::Station);
+        g.set(Pos::new(0, 0), Cell::Origin);
         g.set(Pos::new(1, 0), panel(PanelKind::TurnRight));
 
         g.remove_row(2);
 
-        // 上のパネルが 1 段落ちる。壁の下へ落ちる分は壁があるので消える。
         assert_eq!(g.get(Pos::new(0, 2)), Some(panel(PanelKind::TurnLeft)));
-        assert_eq!(g.get(Pos::new(1, 2)), Some(Cell::Empty));
-        assert_eq!(g.get(Pos::new(2, 2)), Some(Cell::Empty));
-        // 壁は動かない。最上段は空になる。
-        assert_eq!(g.get(Pos::new(1, 1)), Some(Cell::Wall));
-        assert_eq!(g.get(Pos::new(0, 1)), Some(Cell::Empty));
+        assert_eq!(g.get(Pos::new(1, 2)), Some(Cell::Empty)); // 壁は落ちてこない
+        assert_eq!(g.get(Pos::new(2, 2)), Some(Cell::Station));
+        assert_eq!(g.get(Pos::new(0, 1)), Some(Cell::Origin));
+        assert_eq!(g.get(Pos::new(1, 1)), Some(Cell::Wall)); // 壁は動かない
+        assert_eq!(g.get(Pos::new(2, 1)), Some(Cell::Empty));
+        assert_eq!(g.get(Pos::new(0, 0)), Some(Cell::Empty));
         assert_eq!(g.get(Pos::new(1, 0)), Some(Cell::Empty));
     }
 }

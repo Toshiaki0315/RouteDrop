@@ -44,7 +44,7 @@ impl Direction {
     }
 }
 
-/// パネルの種類。ロボットが乗った時の進路変更を決める。
+/// パネルの種類。列車が乗った時の進路変更を決める。
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum PanelKind {
@@ -64,7 +64,7 @@ impl PanelKind {
     }
 }
 
-/// 種類と向きを持つパネル。ロボットは乗ると矢印の指す方向へ進む。
+/// 種類と向きを持つパネル。列車は乗ると矢印の指す方向へ進む。
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 pub struct Panel {
     pub kind: PanelKind,
@@ -86,7 +86,7 @@ impl Panel {
         self.kind.apply(self.facing)
     }
 
-    /// 向き `heading` で進んできた機関車が、このレールを通った後の向き。
+    /// 向き `heading` で進んできた列車が、このレールを通った後の向き。
     /// レールは 2 つの端 (入口側 = facing の反対、出口側) をつなぎ、
     /// どちらの端から入っても反対の端へ抜ける。つながっていない辺から入ると `None` (脱線)。
     pub fn traverse(self, heading: Direction) -> Option<Direction> {

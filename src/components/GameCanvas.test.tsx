@@ -10,8 +10,8 @@ describe('GameCanvas', () => {
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null)
     const { getByLabelText } = render(<GameCanvas snapshot={makeSnapshot()} />)
     const canvas = getByLabelText('game board') as HTMLCanvasElement
-    expect(canvas.width).toBe(120)
-    expect(canvas.height).toBe(160)
+    expect(canvas.width).toBe(144)
+    expect(canvas.height).toBe(178)
   })
 
   it('draws on the 2d context when available', () => {

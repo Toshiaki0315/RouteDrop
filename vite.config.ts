@@ -3,6 +3,9 @@ import react from "@vitejs/plugin-react";
 // @ts-expect-error type error without @types/node package
 import process from "node:process";
 const host = process.env.TAURI_DEV_HOST;
+// dev サーバのポート。1420 (Tauri テンプレートの既定) は他のアプリと衝突しやすいので 1430 を既定にする。
+// `ROUTEDROP_DEV_PORT=1500 make dev` で変えられる (tauri.conf.json の devUrl は Makefile が --config で揃える)。
+const port = Number(process.env.ROUTEDROP_DEV_PORT) || 1430;
 
 // https://vite.dev/config/
 export default defineConfig(() => ({
@@ -14,14 +17,14 @@ export default defineConfig(() => ({
   clearScreen: false,
   // 2. tauri expects a fixed port, fail if that port is not available
   server: {
-    port: 1420,
+    port,
     strictPort: true,
     host: host || false,
     hmr: host
       ? {
           protocol: "ws",
           host,
-          port: 1421,
+          port: port + 1,
         }
       : undefined,
     watch: {

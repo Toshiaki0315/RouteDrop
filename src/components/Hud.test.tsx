@@ -1,28 +1,20 @@
-import { fireEvent, render, screen } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { render, screen } from '@testing-library/react'
+import { describe, expect, it } from 'vitest'
 import { Hud } from './Hud'
 
 describe('Hud', () => {
-  it('shows the score and no status while playing', () => {
-    render(<Hud score={120} status="playing" onRestart={() => {}} />)
-    expect(screen.getByText('Score: 120')).toBeInTheDocument()
-    expect(screen.queryByRole('status')).toBeNull()
+  it('shows score, stations reached and rows to the next station in one zero-padded line', () => {
+    render(<Hud score={10} stationsReached={1} rowsToStation={15} />)
+    expect(screen.getByText('Score: 000010 / 到着駅: 001 / 次の駅まで: 015')).toBeInTheDocument()
   })
 
-  it('shows CLEAR! when cleared', () => {
-    render(<Hud score={0} status="cleared" onRestart={() => {}} />)
-    expect(screen.getByRole('status')).toHaveTextContent('CLEAR!')
+  it('pads small values and never shows a negative distance', () => {
+    render(<Hud score={0} stationsReached={0} rowsToStation={-3} />)
+    expect(screen.getByText('Score: 000000 / 到着駅: 000 / 次の駅まで: 000')).toBeInTheDocument()
   })
 
-  it('shows GAME OVER when the game is over', () => {
-    render(<Hud score={0} status="game_over" onRestart={() => {}} />)
-    expect(screen.getByRole('status')).toHaveTextContent('GAME OVER')
-  })
-
-  it('calls onRestart when the button is clicked', () => {
-    const onRestart = vi.fn()
-    render(<Hud score={0} status="playing" onRestart={onRestart} />)
-    fireEvent.click(screen.getByRole('button', { name: 'Restart' }))
-    expect(onRestart).toHaveBeenCalledTimes(1)
+  it('keeps big values as they are', () => {
+    render(<Hud score={1234567} stationsReached={12} rowsToStation={120} />)
+    expect(screen.getByText('Score: 1234567 / 到着駅: 012 / 次の駅まで: 120')).toBeInTheDocument()
   })
 })

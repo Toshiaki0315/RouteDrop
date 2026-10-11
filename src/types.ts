@@ -6,8 +6,8 @@ export interface Panel {
   kind: PanelKind
   facing: Direction
 }
-export type Cell = 'empty' | 'wall' | { panel: Panel }
-export type Status = 'playing' | 'cleared' | 'game_over'
+export type Cell = 'empty' | 'wall' | 'station' | 'origin' | { panel: Panel }
+export type Status = 'playing' | 'game_over'
 export type Input = 'move_left' | 'move_right' | 'soft_drop' | 'hard_drop' | 'rotate'
 
 export interface Pos {
@@ -26,7 +26,7 @@ export interface Piece {
   panel: Panel
 }
 
-export interface Robot {
+export interface Train {
   pos: Pos
   heading: Direction
 }
@@ -36,10 +36,13 @@ export interface Snapshot {
   piece: Piece | null
   /** 次に降ってくるパネル */
   next: Panel
-  robot: Robot
-  /** 盤面の外にあるスタート駅とゴール駅 */
-  start: Pos
-  goal: Pos
+  /** 次のパネルが出現する列 */
+  next_column: number
+  train: Train
+  /** 次の駅までの縦方向の距離 (マス)。駅が盤面の上に見えていない間も数える */
+  rows_to_station: number
+  /** 到着した駅の数 */
+  stations_reached: number
   status: Status
   score: number
 }

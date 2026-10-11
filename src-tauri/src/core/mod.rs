@@ -4,5 +4,5 @@ pub mod grid;
 pub mod level;
 pub mod piece;
 pub mod rng;
-pub mod robot;
+pub mod train;
 pub mod types;
