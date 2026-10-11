@@ -1,0 +1,41 @@
+name: CI & Coverage
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  test-rust:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - name: Install tarpaulin
+        run: cargo install cargo-tarpaulin --locked
+      - name: Run Rust tests with coverage (core must stay at 100%)
+        run: >
+          cargo tarpaulin --manifest-path src-tauri/Cargo.toml
+          --engine llvm --include-files "src/core/*"
+          --fail-under 100 --out Xml
+
+  test-ts:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Type check
+        run: npx tsc --noEmit
+      - name: Run Vitest with Coverage
+        run: npm run test:coverage
